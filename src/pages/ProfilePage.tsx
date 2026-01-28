@@ -1,40 +1,35 @@
-import { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { DiscordAvatar } from '@/components/DiscordAvatar';
-import { RankBadge } from '@/components/RankBadge';
-import { RankProgress } from '@/components/RankProgress';
-import { toast } from 'sonner';
-import { 
-  Loader2, 
-  LogOut, 
-  Upload, 
-  Clock, 
-  FileText, 
-  Send, 
-  Settings,
-  Youtube,
-  Image,
-  ExternalLink,
-  Trash2
-} from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
-import { ru } from 'date-fns/locale';
 
-interface Report {
-  id: string;
-  report_type: string;
-  content_url: string;
-  description: string | null;
-  created_at: string;
+const AuthPage: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const session = supabase.auth.session();
+    if (session) navigate('/profile');
+  }, []);
+
+  const handleLogin = async () => {
+    const { error } = await supabase.auth.signIn({
+      provider: 'discord',
+    });
+    if (error) console.log('Ошибка входа:', error.message);
+  };
+
+  return (
+    <div className="flex items-center justify-center h-screen bg-gradient-to-r from-purple-800 to-blue-700">
+      <button
+        onClick={handleLogin}
+        className="px-8 py-4 bg-white text-black font-bold rounded-lg hover:scale-105 transition"
+      >
+        Войти через Discord
+      </button>
+    </div>
+  );
+};
+
+export default AuthPage;  created_at: string;
 }
 
 interface PromotionRequest {
