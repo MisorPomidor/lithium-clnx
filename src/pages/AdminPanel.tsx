@@ -1,40 +1,118 @@
-import { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DiscordAvatar } from '@/components/DiscordAvatar';
-import { RankBadge } from '@/components/RankBadge';
-import { toast } from 'sonner';
-import { 
-  Loader2, 
-  ArrowLeft, 
-  Users, 
-  Bell, 
-  Search,
-  Check,
-  X,
-  MessageSquare,
-  FileText,
-  Youtube,
-  Image,
-  ExternalLink
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
 
-interface Profile {
+interface UserData {
   id: string;
-  user_id: string;
-  discord_id: string;
-  discord_username: string;
-  discord_avatar: string | null;
-  current_rank: 'newbie' | 'test' | 'main' | 'high_staff';
+  email: string;
+  reports: string[];
+  rank: string;
+}
+
+interface RankRequest {
+  id: number;
+  user_email: string;
+  current_rank: string;
+  requested_rank: string;
+  status: string;
+}
+
+const AdminPanel: React.FC = () => {
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [requests, setRequests] = useState<RankRequest[]>([]);
+
+  useEffect(() => {
+    const fetchAdmin = async () => {
+      const session = supabase.auth.session();
+      if (!session) return navigate('/');
+
+      const { data } = await supabase.from<UserData>('users').select('*');
+      setUsers(data || []);
+
+      const req = await supabase.from<RankRequest>('rank_requests').select('*');
+      setRequests(req.data || []);
+    };
+
+    fetchAdmin();
+  }, []);
+
+  const handleRequest = async (id: number, approve: boolean) => {
+    await supabase
+      .from('rank_requests')
+      .update({ status: approve ? 'approved' : 'rejected' })
+      .eq('id', id);
+    setRequests(requests.filter((r) => r.id !== id));
+  };
+
+  return (
+    <div className="p-8 bg-gray-900 min-h-screen text-white">
+      <h1 className="text-3xl font-bold mb-6">Админ-панель</h1>
+
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Список участников</h2>
+        <ul className="mb-2">
+          {users.map((u) => (
+            <li
+              key={u.id}
+              className="mb-1 cursor-pointer hover:text-blue-400"
+              onClick={() => setSelectedUser(u)}
+            >
+              {u.email} — {u.rank}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {selectedUser && (
+        <div className="mb-6 p-4 border border-gray-700 rounded">
+          <h3 className="text-xl font-bold">{selectedUser.email}</h3>
+          <p>Ранг: {selectedUser.rank}</p>
+          <h4 className="mt-2 font-bold">Отчеты:</h4>
+          <ul>
+            {(selectedUser.reports || []).map((r, idx) => (
+              <li key={idx}>
+                <a href={r} target="_blank" className="text-blue-400 underline">
+                  {r}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div>
+        <h2 className="text-2xl font-bold mb-2">Заявки на повышение</h2>
+        <ul>
+          {requests.map((r) => (
+            <li key={r.id} className="mb-2 p-2 border border-gray-700 rounded">
+              <p>Пользователь: {r.user_email}</p>
+              <p>Текущий ранг: {r.current_rank}</p>
+              <p>Желаемый ранг: {r.requested_rank}</p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => handleRequest(r.id, true)}
+                  className="px-3 py-1 bg-green-600 rounded hover:bg-green-500"
+                >
+                  Принять
+                </button>
+                <button
+                  onClick={() => handleRequest(r.id, false)}
+                  className="px-3 py-1 bg-red-600 rounded hover:bg-red-500"
+                >
+                  Отклонить
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default AdminPanel;  current_rank: 'newbie' | 'test' | 'main' | 'high_staff';
   is_admin: boolean;
   created_at: string;
 }
