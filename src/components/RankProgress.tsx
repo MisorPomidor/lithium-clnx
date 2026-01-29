@@ -1,65 +1,69 @@
+import React from 'react';
 import { cn } from '@/lib/utils';
-import { RankBadge } from './RankBadge';
-import { CheckCircle2, Circle, Lock } from 'lucide-react';
+import { Check, Clock, Star } from 'lucide-react';
+
+type Rank = 'Newbie' | 'Test' | 'Main';
 
 interface RankProgressProps {
-  currentRank: 'newbie' | 'test' | 'main' | 'high_staff';
-  className?: string;
+  currentRank: Rank;
+  daysUntilNextRank?: number;
 }
 
-const ranks = ['newbie', 'test', 'main'] as const;
+const ranks: { name: Rank; icon: React.ReactNode; description: string }[] = [
+  { name: 'Newbie', icon: <Star className="w-5 h-5" />, description: 'Начинающий участник' },
+  { name: 'Test', icon: <Clock className="w-5 h-5" />, description: 'Тестовый период' },
+  { name: 'Main', icon: <Check className="w-5 h-5" />, description: 'Основной состав' },
+];
 
-export function RankProgress({ currentRank, className }: RankProgressProps) {
-  const currentIndex = ranks.indexOf(currentRank as typeof ranks[number]);
+const RankProgress: React.FC<RankProgressProps> = ({ currentRank, daysUntilNextRank }) => {
+  const currentRankIndex = ranks.findIndex(r => r.name === currentRank);
 
   return (
-    <div className={cn('w-full', className)}>
-      <h3 className="text-lg font-bold text-foreground mb-6 glow-text">Путь повышения</h3>
-      
-      <div className="relative flex items-center justify-between">
-        {/* Progress line */}
-        <div className="absolute top-6 left-0 right-0 h-1 bg-muted rounded-full">
-          <div 
-            className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 rounded-full transition-all duration-700"
-            style={{ width: `${(currentIndex / (ranks.length - 1)) * 100}%` }}
-          />
-        </div>
+    <div className="relative">
+      {/* Progress line */}
+      <div className="absolute top-8 left-0 right-0 h-1 bg-muted rounded-full mx-12">
+        <div 
+          className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
+          style={{ width: `${(currentRankIndex / (ranks.length - 1)) * 100}%` }}
+        />
+      </div>
 
+      {/* Rank nodes */}
+      <div className="relative flex justify-between">
         {ranks.map((rank, index) => {
-          const isPast = index < currentIndex;
-          const isCurrent = index === currentIndex;
-          const isFuture = index > currentIndex;
+          const isPast = index < currentRankIndex;
+          const isCurrent = index === currentRankIndex;
+          const isFuture = index > currentRankIndex;
 
           return (
-            <div key={rank} className="relative flex flex-col items-center z-10">
-              {/* Icon */}
+            <div key={rank.name} className="flex flex-col items-center">
               <div
                 className={cn(
-                  'w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300',
-                  isPast && 'bg-primary text-primary-foreground',
-                  isCurrent && 'bg-primary text-primary-foreground animate-pulse-glow',
-                  isFuture && 'bg-muted text-muted-foreground'
+                  "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 relative z-10",
+                  isPast && "bg-primary/20 border-2 border-primary text-primary",
+                  isCurrent && "bg-primary text-primary-foreground shadow-[0_0_30px_hsl(187_100%_50%/0.6)] animate-pulse-glow scale-110",
+                  isFuture && "bg-muted border-2 border-muted-foreground/30 text-muted-foreground"
                 )}
               >
-                {isPast && <CheckCircle2 className="w-6 h-6" />}
-                {isCurrent && <Circle className="w-6 h-6 fill-current" />}
-                {isFuture && <Lock className="w-5 h-5" />}
+                {rank.icon}
               </div>
-
-              {/* Label */}
-              <div className="mt-4">
-                <RankBadge 
-                  rank={rank} 
-                  size="sm"
-                  className={cn(
-                    isCurrent && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                  )}
-                />
-              </div>
-
-              {/* Current indicator */}
-              {isCurrent && (
-                <span className="mt-2 text-xs text-primary font-medium">Текущий</span>
+              <span
+                className={cn(
+                  "mt-3 font-display text-sm font-semibold",
+                  isCurrent && "text-primary text-glow",
+                  isPast && "text-primary/70",
+                  isFuture && "text-muted-foreground"
+                )}
+              >
+                {rank.name}
+              </span>
+              <span className="text-xs text-muted-foreground mt-1 text-center max-w-24">
+                {rank.description}
+              </span>
+              {isCurrent && daysUntilNextRank !== undefined && index < ranks.length - 1 && (
+                <div className="mt-2 px-3 py-1 bg-warning/20 text-warning text-xs rounded-full border border-warning/30">
+                  {daysUntilNextRank} дней до повышения
+                </div>
               )}
             </div>
           );
@@ -67,4 +71,6 @@ export function RankProgress({ currentRank, className }: RankProgressProps) {
       </div>
     </div>
   );
-}
+};
+
+export default RankProgress;
