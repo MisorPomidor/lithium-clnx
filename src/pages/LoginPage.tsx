@@ -2,10 +2,11 @@ import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ParticleBackground from '@/components/ParticleBackground';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const DiscordIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -14,33 +15,35 @@ const DiscordIcon = () => (
 );
 
 const LoginPage: React.FC = () => {
-  const { loginWithDiscord, isLoading, user, isAuthenticated } = useAuthContext();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.hasAccess) {
-        navigate('/dashboard');
-      } else {
-        navigate('/no-access');
-      }
+    if (!loading && user && profile) {
+      navigate('/profile');
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [loading, user, profile, navigate]);
 
   const handleLogin = async () => {
     try {
-      await loginWithDiscord();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: `${window.location.origin}/profile`,
+          scopes: 'identify guilds',
+        },
+      });
+      
+      if (error) {
+        throw error;
+      }
     } catch (error) {
       console.error('Login error:', error);
-      toast({
-        title: 'Ошибка входа',
-        description: 'Не удалось войти через Discord. Попробуйте снова.',
-        variant: 'destructive',
-      });
+      toast.error('Не удалось войти через Discord');
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center relative">
         <ParticleBackground />
@@ -74,18 +77,12 @@ const LoginPage: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <Button 
-              variant="discord" 
-              size="xl" 
-              className="w-full gap-3"
+              size="lg" 
+              className="w-full gap-3 bg-[#5865F2] hover:bg-[#4752C4] text-white"
               onClick={handleLogin}
-              disabled={isLoading}
             >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <DiscordIcon />
-              )}
-              {isLoading ? 'Вход...' : 'Войти через Discord'}
+              <DiscordIcon />
+              Войти через Discord
             </Button>
 
             <div className="pt-4 border-t border-border/50">

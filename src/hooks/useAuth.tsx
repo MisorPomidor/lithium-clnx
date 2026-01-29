@@ -8,12 +8,12 @@ interface Profile {
   discord_id: string;
   discord_username: string;
   discord_avatar: string | null;
-  current_rank: 'newbie' | 'test' | 'main' | 'high_staff';
-  rank_updated_at: string;
+  current_rank: 'newbie' | 'test' | 'main' | 'high_staff' | null;
+  rank_updated_at: string | null;
   next_rank_deadline: string | null;
-  is_admin: boolean;
-  created_at: string;
-  updated_at: string;
+  is_admin: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 interface AuthContextType {
@@ -38,14 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching profile:', error);
       return null;
     }
 
-    return data as Profile;
+    return data as Profile | null;
   };
 
   const refreshProfile = async () => {
