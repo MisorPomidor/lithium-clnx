@@ -16,153 +16,118 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
-          avatar_url: string | null
           created_at: string | null
-          days_until_next_rank: number | null
-          discord_id: string | null
-          display_name: string
-          has_access: boolean | null
-          highest_role: string | null
+          current_rank: Database["public"]["Enums"]["user_rank"] | null
+          discord_avatar: string | null
+          discord_id: string
+          discord_username: string
           id: string
-          is_high_staff: boolean | null
-          rank: Database["public"]["Enums"]["member_rank"] | null
+          is_admin: boolean | null
+          next_rank_deadline: string | null
+          rank_updated_at: string | null
           updated_at: string | null
-          username: string
+          user_id: string
         }
         Insert: {
-          avatar_url?: string | null
           created_at?: string | null
-          days_until_next_rank?: number | null
-          discord_id?: string | null
-          display_name: string
-          has_access?: boolean | null
-          highest_role?: string | null
-          id: string
-          is_high_staff?: boolean | null
-          rank?: Database["public"]["Enums"]["member_rank"] | null
+          current_rank?: Database["public"]["Enums"]["user_rank"] | null
+          discord_avatar?: string | null
+          discord_id: string
+          discord_username: string
+          id?: string
+          is_admin?: boolean | null
+          next_rank_deadline?: string | null
+          rank_updated_at?: string | null
           updated_at?: string | null
-          username: string
+          user_id: string
         }
         Update: {
-          avatar_url?: string | null
           created_at?: string | null
-          days_until_next_rank?: number | null
-          discord_id?: string | null
-          display_name?: string
-          has_access?: boolean | null
-          highest_role?: string | null
+          current_rank?: Database["public"]["Enums"]["user_rank"] | null
+          discord_avatar?: string | null
+          discord_id?: string
+          discord_username?: string
           id?: string
-          is_high_staff?: boolean | null
-          rank?: Database["public"]["Enums"]["member_rank"] | null
+          is_admin?: boolean | null
+          next_rank_deadline?: string | null
+          rank_updated_at?: string | null
           updated_at?: string | null
-          username?: string
+          user_id?: string
         }
         Relationships: []
       }
       promotion_requests: {
         Row: {
+          admin_comment: string | null
           created_at: string | null
-          current_rank: Database["public"]["Enums"]["member_rank"]
+          current_rank: Database["public"]["Enums"]["user_rank"]
           id: string
+          requested_rank: Database["public"]["Enums"]["user_rank"]
           reviewed_at: string | null
-          reviewer_comment: string | null
-          reviewer_id: string | null
-          status: Database["public"]["Enums"]["promotion_status"] | null
-          target_rank: Database["public"]["Enums"]["member_rank"]
+          reviewed_by: string | null
+          status: string | null
           user_id: string
         }
         Insert: {
+          admin_comment?: string | null
           created_at?: string | null
-          current_rank: Database["public"]["Enums"]["member_rank"]
+          current_rank: Database["public"]["Enums"]["user_rank"]
           id?: string
+          requested_rank: Database["public"]["Enums"]["user_rank"]
           reviewed_at?: string | null
-          reviewer_comment?: string | null
-          reviewer_id?: string | null
-          status?: Database["public"]["Enums"]["promotion_status"] | null
-          target_rank: Database["public"]["Enums"]["member_rank"]
+          reviewed_by?: string | null
+          status?: string | null
           user_id: string
         }
         Update: {
+          admin_comment?: string | null
           created_at?: string | null
-          current_rank?: Database["public"]["Enums"]["member_rank"]
+          current_rank?: Database["public"]["Enums"]["user_rank"]
           id?: string
+          requested_rank?: Database["public"]["Enums"]["user_rank"]
           reviewed_at?: string | null
-          reviewer_comment?: string | null
-          reviewer_id?: string | null
-          status?: Database["public"]["Enums"]["promotion_status"] | null
-          target_rank?: Database["public"]["Enums"]["member_rank"]
+          reviewed_by?: string | null
+          status?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "promotion_requests_reviewer_id_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "promotion_requests_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       reports: {
         Row: {
+          content_url: string
           created_at: string | null
-          description: string
+          description: string | null
           id: string
-          reviewer_comment: string | null
-          status: Database["public"]["Enums"]["report_status"] | null
-          type: Database["public"]["Enums"]["report_type"]
-          url: string
+          report_type: string
           user_id: string
         }
         Insert: {
+          content_url: string
           created_at?: string | null
-          description: string
+          description?: string | null
           id?: string
-          reviewer_comment?: string | null
-          status?: Database["public"]["Enums"]["report_status"] | null
-          type: Database["public"]["Enums"]["report_type"]
-          url: string
+          report_type: string
           user_id: string
         }
         Update: {
+          content_url?: string
           created_at?: string | null
-          description?: string
+          description?: string | null
           id?: string
-          reviewer_comment?: string | null
-          status?: Database["public"]["Enums"]["report_status"] | null
-          type?: Database["public"]["Enums"]["report_type"]
-          url?: string
+          report_type?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "reports_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      member_rank: "Newbie" | "Test" | "Main"
-      promotion_status: "pending" | "approved" | "rejected"
-      report_status: "pending" | "approved" | "rejected"
-      report_type: "video" | "screenshot"
+      user_rank: "newbie" | "test" | "main" | "high_staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -290,10 +255,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      member_rank: ["Newbie", "Test", "Main"],
-      promotion_status: ["pending", "approved", "rejected"],
-      report_status: ["pending", "approved", "rejected"],
-      report_type: ["video", "screenshot"],
+      user_rank: ["newbie", "test", "main", "high_staff"],
     },
   },
 } as const

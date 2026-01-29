@@ -29,7 +29,7 @@ export function DiscordAvatar({
   return (
     <div 
       className={cn(
-        'rounded-full overflow-hidden border-2 border-primary/50 glow-border',
+        'rounded-full overflow-hidden border-2 border-primary/50',
         sizeStyles[size],
         className
       )}
@@ -45,3 +45,5 @@ export function DiscordAvatar({
     </div>
   );
 }
+
+export default DiscordAvatar;

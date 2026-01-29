@@ -1,35 +1,47 @@
-import React, { useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ru } from 'date-fns/locale';
+import {
+  Upload,
+  FileText,
+  Youtube,
+  Image,
+  ExternalLink,
+  Trash2,
+  Clock,
+  Send,
+  Loader2,
+  LogOut,
+  Settings,
+} from 'lucide-react';
+import { RankBadge } from '@/components/RankBadge';
+import RankProgress from '@/components/RankProgress';
+import { DiscordAvatar } from '@/components/DiscordAvatar';
+import ParticleBackground from '@/components/ParticleBackground';
 
-const AuthPage: React.FC = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const session = supabase.auth.session();
-    if (session) navigate('/profile');
-  }, []);
-
-  const handleLogin = async () => {
-    const { error } = await supabase.auth.signIn({
-      provider: 'discord',
-    });
-    if (error) console.log('Ошибка входа:', error.message);
-  };
-
-  return (
-    <div className="flex items-center justify-center h-screen bg-gradient-to-r from-purple-800 to-blue-700">
-      <button
-        onClick={handleLogin}
-        className="px-8 py-4 bg-white text-black font-bold rounded-lg hover:scale-105 transition"
-      >
-        Войти через Discord
-      </button>
-    </div>
-  );
-};
-
-export default AuthPage;  created_at: string;
+interface Report {
+  id: string;
+  report_type: string;
+  content_url: string;
+  description: string | null;
+  created_at: string;
 }
 
 interface PromotionRequest {
@@ -41,7 +53,7 @@ interface PromotionRequest {
   created_at: string;
 }
 
-export default function Profile() {
+export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
@@ -180,7 +192,8 @@ export default function Profile() {
 
   if (loading || !profile) {
     return (
-      <div className="min-h-screen bg-background cyber-grid flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <ParticleBackground />
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -193,12 +206,23 @@ export default function Profile() {
   const pendingRequest = promotionRequests.find(r => r.status === 'pending');
   const canRequestPromotion = profile.current_rank !== 'main' && profile.current_rank !== 'high_staff' && !pendingRequest;
 
+  const getRankDisplay = (rank: string | null): 'Newbie' | 'Test' | 'Main' => {
+    switch (rank) {
+      case 'newbie': return 'Newbie';
+      case 'test': return 'Test';
+      case 'main': return 'Main';
+      default: return 'Newbie';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background cyber-grid">
+    <div className="min-h-screen bg-background relative">
+      <ParticleBackground />
+      
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary glow-text">LITHIUM</h1>
+          <h1 className="text-2xl font-display font-bold text-primary text-glow">LITHIUM</h1>
           
           <div className="flex items-center gap-4">
             {profile.is_admin && (
@@ -223,9 +247,9 @@ export default function Profile() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-4 py-8 space-y-8 relative z-10">
         {/* Profile Card */}
-        <Card className="glass-card">
+        <Card className="bg-card/80 backdrop-blur-xl border-border">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               <DiscordAvatar
@@ -240,9 +264,9 @@ export default function Profile() {
                   {profile.discord_username}
                 </h2>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
-                  <RankBadge rank={profile.current_rank} size="lg" />
+                  <RankBadge rank={profile.current_rank || 'newbie'} size="lg" />
                   {profile.is_admin && (
-                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-500/20 text-purple-400 border border-purple-500/50">
+                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-secondary/20 text-secondary border border-secondary/50">
                       Администратор
                     </span>
                   )}
@@ -261,26 +285,26 @@ export default function Profile() {
 
         {/* Rank Progress */}
         {profile.current_rank !== 'high_staff' && (
-          <Card className="glass-card">
+          <Card className="bg-card/80 backdrop-blur-xl border-border">
             <CardContent className="p-6">
-              <RankProgress currentRank={profile.current_rank} />
+              <RankProgress currentRank={getRankDisplay(profile.current_rank)} />
 
               {canRequestPromotion && (
                 <div className="mt-8 text-center">
                   <Dialog open={isPromotionOpen} onOpenChange={setIsPromotionOpen}>
                     <DialogTrigger asChild>
-                      <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
+                      <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold box-glow">
                         <Send className="w-4 h-4 mr-2" />
                         Подать заявку на повышение
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="glass-card border-primary/30">
+                    <DialogContent className="bg-card/95 backdrop-blur-xl border-primary/30">
                       <DialogHeader>
                         <DialogTitle className="text-foreground">Заявка на повышение</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4">
                         <p className="text-muted-foreground">
-                          Вы подаёте заявку на повышение с <RankBadge rank={profile.current_rank} size="sm" /> до{' '}
+                          Вы подаёте заявку на повышение с <RankBadge rank={profile.current_rank || 'newbie'} size="sm" /> до{' '}
                           <RankBadge 
                             rank={profile.current_rank === 'newbie' ? 'test' : 'main'} 
                             size="sm" 
@@ -321,7 +345,7 @@ export default function Profile() {
         )}
 
         {/* Reports Section */}
-        <Card className="glass-card">
+        <Card className="bg-card/80 backdrop-blur-xl border-border">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-foreground flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
@@ -334,7 +358,7 @@ export default function Profile() {
                   Загрузить отчёт
                 </Button>
               </DialogTrigger>
-              <DialogContent className="glass-card border-primary/30">
+              <DialogContent className="bg-card/95 backdrop-blur-xl border-primary/30">
                 <DialogHeader>
                   <DialogTitle className="text-foreground">Загрузить отчёт</DialogTitle>
                 </DialogHeader>
@@ -349,14 +373,14 @@ export default function Profile() {
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="youtube_video" id="youtube" />
                         <Label htmlFor="youtube" className="flex items-center gap-2 cursor-pointer">
-                          <Youtube className="w-4 h-4 text-red-500" />
+                          <Youtube className="w-4 h-4 text-destructive" />
                           YouTube видео
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="screenshot" id="screenshot" />
                         <Label htmlFor="screenshot" className="flex items-center gap-2 cursor-pointer">
-                          <Image className="w-4 h-4 text-blue-500" />
+                          <Image className="w-4 h-4 text-primary" />
                           Скриншот
                         </Label>
                       </div>
@@ -415,13 +439,13 @@ export default function Profile() {
                 {reports.map((report) => (
                   <div
                     key={report.id}
-                    className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg border border-border"
+                    className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border"
                   >
                     <div className="flex items-center gap-3">
                       {report.report_type === 'youtube_video' ? (
-                        <Youtube className="w-5 h-5 text-red-500" />
+                        <Youtube className="w-5 h-5 text-destructive" />
                       ) : (
-                        <Image className="w-5 h-5 text-blue-500" />
+                        <Image className="w-5 h-5 text-primary" />
                       )}
                       <div>
                         <p className="text-foreground font-medium truncate max-w-[300px]">
@@ -458,10 +482,10 @@ export default function Profile() {
 
         {/* Promotion Requests History */}
         {promotionRequests.length > 0 && (
-          <Card className="glass-card">
+          <Card className="bg-card/80 backdrop-blur-xl border-border">
             <CardHeader>
               <CardTitle className="text-foreground flex items-center gap-2">
-                <Send className="w-5 h-5 text-primary" />
+                <Send className="w-5 h-5 text-secondary" />
                 История заявок на повышение
               </CardTitle>
             </CardHeader>
@@ -470,36 +494,33 @@ export default function Profile() {
                 {promotionRequests.map((request) => (
                   <div
                     key={request.id}
-                    className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg border border-border"
+                    className="p-4 bg-muted/50 rounded-lg border border-border"
                   >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <RankBadge rank={request.current_rank as any} size="sm" />
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <RankBadge rank={request.current_rank as 'newbie' | 'test' | 'main' | 'high_staff'} size="sm" />
                         <span className="text-muted-foreground">→</span>
-                        <RankBadge rank={request.requested_rank as any} size="sm" />
+                        <RankBadge rank={request.requested_rank as 'newbie' | 'test' | 'main' | 'high_staff'} size="sm" />
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(request.created_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
-                      </p>
-                      {request.admin_comment && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Комментарий: {request.admin_comment}
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        request.status === 'pending'
-                          ? 'bg-warning/20 text-warning border border-warning/50'
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        request.status === 'pending' 
+                          ? 'bg-warning/20 text-warning' 
                           : request.status === 'approved'
-                          ? 'bg-success/20 text-success border border-success/50'
-                          : 'bg-destructive/20 text-destructive border border-destructive/50'
-                      }`}
-                    >
-                      {request.status === 'pending' && 'Ожидает'}
-                      {request.status === 'approved' && 'Одобрено'}
-                      {request.status === 'rejected' && 'Отклонено'}
-                    </span>
+                          ? 'bg-success/20 text-success'
+                          : 'bg-destructive/20 text-destructive'
+                      }`}>
+                        {request.status === 'pending' ? 'На рассмотрении' : 
+                         request.status === 'approved' ? 'Одобрено' : 'Отклонено'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(request.created_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
+                    </p>
+                    {request.admin_comment && (
+                      <p className="mt-2 text-sm text-muted-foreground italic">
+                        Комментарий: {request.admin_comment}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

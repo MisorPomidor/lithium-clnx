@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 interface RankBadgeProps {
-  rank: 'newbie' | 'test' | 'main' | 'high_staff';
+  rank: 'newbie' | 'test' | 'main' | 'high_staff' | string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -14,10 +14,10 @@ const rankLabels: Record<string, string> = {
 };
 
 const rankStyles: Record<string, string> = {
-  newbie: 'rank-newbie',
-  test: 'rank-test',
-  main: 'rank-main',
-  high_staff: 'rank-high-staff',
+  newbie: 'bg-muted text-muted-foreground border-muted-foreground/30',
+  test: 'bg-warning/20 text-warning border-warning/30',
+  main: 'bg-primary/20 text-primary border-primary/30',
+  high_staff: 'bg-secondary/20 text-secondary border-secondary/30',
 };
 
 const sizeStyles: Record<string, string> = {
@@ -27,16 +27,20 @@ const sizeStyles: Record<string, string> = {
 };
 
 export function RankBadge({ rank, size = 'md', className }: RankBadgeProps) {
+  const safeRank = rank || 'newbie';
+  
   return (
     <span
       className={cn(
-        'rank-badge inline-flex items-center font-bold uppercase tracking-wider',
-        rankStyles[rank],
+        'inline-flex items-center font-bold uppercase tracking-wider rounded-full border',
+        rankStyles[safeRank] || rankStyles['newbie'],
         sizeStyles[size],
         className
       )}
     >
-      {rankLabels[rank]}
+      {rankLabels[safeRank] || 'Newbie'}
     </span>
   );
 }
+
+export default RankBadge;
